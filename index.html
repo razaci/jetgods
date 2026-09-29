@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-<title>Jet Gods APEX TOON — Progression Finale Phase 10</title>
+<title>Jet Gods APEX TOON — Gameplay Overlay Fixed v7</title>
 <style>
 :root{color-scheme:dark}
 html,body{margin:0;height:100%;overflow:hidden;background:#050c19;color:#edfaff;font:600 16px system-ui;touch-action:none}
@@ -225,6 +225,24 @@ button:focus-visible{outline:3px solid #fff3a8;outline-offset:3px}
 #hangarCraft[data-cockpit="2"] .glass{box-shadow:inset 8px -5px #1c6588,0 0 10px #74edff}
 #hangarCraft[data-cockpit="3"] .glass{background:#fff7b2;box-shadow:inset 8px -5px #5b7a88,0 0 16px #fff7b2}
 
+
+/* v7 — keep giant menu/title branding off the flight screen */
+body.playing #overlay,
+body.playing .menu,
+body.playing .title,
+body.playing .hero,
+body.playing .splash,
+body.playing .intro,
+body.playing .logoPanel,
+body.playing .centerTitle,
+body.playing #titleCard,
+body.playing #splash,
+body.playing #intro,
+body.playing #menuCard{
+  display:none !important;
+}
+body.playing canvas{display:block}
+
 </style>
 </head>
 <body>
@@ -377,7 +395,7 @@ const sysDial=document.querySelector('#sysDial');
 const alertLine=document.querySelector('#alertLine');
 const morphMeter=document.querySelector('#morphMeter');
 
-let W=0,H=0,dpr=1,mode='menu',pressed=false;
+let W=0,H=0,dpr=1,mode='menu',pressed=false,morphSelecting=false;
 let player,obstacles=[],pickups=[],particles=[],missiles=[],lasers=[],vents=[],debris=[];
 let mines=[],dronesEnemy=[],energyOrbs=[];
 let zone=0,zoneFlash=0,hull=3,distance=0,coins=0,best=0,stageIndex=0,stageDistance=0,stageCompleteFlash=0,stageReward=0,boss=null,bossFlash=0,bossProjectiles=[],craftUpgradeFlash=0,craftUpgradeKind='',campaignFinale=0,camZoom=1,camZoomTarget=1,camFocusX=0,camFocusY=0,camKick=0,camSlow=0,nearMissFX=0,camPanX=0,camPanY=0,camRoll=0,camRollTarget=0,camFlash=0,camPose=0,camPoseKind='';
@@ -391,7 +409,7 @@ let beam=null,stormTime=0,cargoFlash=0,combo=0,comboTime=0,ace=false;
 let soundOn=true,audioCtx=null,lastTone=0;
 let morphCores=0,morphTime=0,morphForm=null,overdriveTime=0,barrierTime=0,prismTime=0;
 let trail=[],stars=[];
-let morphTransform=0,morphBurstRing=0,nearFlash=0,boostFlash=0,fragments=[];enemyDefeats=[];
+let morphTransform=0,morphBurstRing=0,nearFlash=0,boostFlash=0,fragments=[],enemyDefeats=[];
 let morphAbilityCooldown=0,morphAbilityFlash=0;
 let launchFX=0,zoneTransition=0,milestoneFlash=0,milestoneText='',lastMilestone=0,comicPops=[],poseFlash=0,poseKind='',morphSnap=0,attackPose=0,attackKind='',pickupFlash=0,pickupKind='',enemyMoodFlash=0,finaleFlash=0;
 
@@ -628,8 +646,18 @@ function resize(){
 addEventListener('resize',resize);resize();
 player={x:Math.max(72,Math.min(120,W*.22)),y:H*.5,vy:0,r:17};
 
-function show(t,m,b){title.textContent=t;message.textContent=m;start.textContent=b;overlay.style.display='grid'}
+function show(t,m,b){
+  for(const el of document.querySelectorAll('#overlay .brand,.bigTitle,.giantTitle,.splashTitle,.heroTitle')){
+    el.style.display='';
+  }
+
+  document.body.classList.remove('playing');title.textContent=t;message.textContent=m;start.textContent=b;overlay.style.display='grid'}
 function reset(){
+  document.body.classList.add('playing');
+  for(const el of document.querySelectorAll('#overlay .brand,.bigTitle,.giantTitle,.splashTitle,.heroTitle')){
+    el.style.display='none';
+  }
+
   player={x:Math.max(72,Math.min(120,W*.22)),y:H*.5,vy:0,r:17};
   obstacles=[];pickups=[];particles=[];missiles=[];lasers=[];vents=[];debris=[];
   mines=[];dronesEnemy=[];energyOrbs=[];
@@ -637,11 +665,11 @@ function reset(){
   magnetTime=shieldTime=slowTime=phaseTime=doubleTime=pulseTime=droneTime=droneCooldown=stormTime=cargoFlash=combo=comboTime=0;
   morphCores=0;morphTime=0;morphForm=null;overdriveTime=0;barrierTime=0;prismTime=0;
   beam=null;invuln=2;distance=coins=spawn=clock=shake=cells=boostTime=thrust=0;
-  fuel=100+upgrades.fuel*20;trail=[];morphTransform=0;morphBurstRing=0;nearFlash=0;boostFlash=0;fragments=[];morphAbilityCooldown=0;morphAbilityFlash=0;launchFX=1.8;zoneTransition=0;
+  fuel=100+upgrades.fuel*20;trail=[];morphTransform=0;morphBurstRing=0;nearFlash=0;boostFlash=0;fragments=[];enemyDefeats=[];morphAbilityCooldown=0;morphAbilityFlash=0;launchFX=1.8;zoneTransition=0;
    milestoneFlash=0;milestoneText='';lastMilestone=0;comicPops=[];poseFlash=0;poseKind='';morphSnap=0;attackPose=0;attackKind='';pickupFlash=0;pickupKind='';enemyMoodFlash=0;finaleFlash=0;
   shop.classList.remove('open');shopToggle.textContent='HANGAR UPGRADES';
-  pressed=false;morphSelecting=false;morphSelect.classList.remove('open');morphHint.classList.remove('show');boostBtn.style.display='block';morphBtn.style.display='block';abilityBtn.style.display='block';
-  mode='play';overlay.style.display='none';launchFX=1.8;finaleFlash=1;shake=4;comicPop(player.x+40,player.y-34,'GO!','#8ff7ff',1.25);if(boss&&!boss.defeated)damageBoss(morphForm==='razer'?3:1);
+  pressed=false;morphSelecting=false;if(morphSelect)morphSelect.classList.remove('open');if(morphHint)morphHint.classList.remove('show');boostBtn.style.display='block';morphBtn.style.display='block';abilityBtn.style.display='block';
+  mode='play';document.body.classList.add('playing');overlay.style.display='none';launchFX=1.8;finaleFlash=1;shake=4;comicPop(player.x+40,player.y-34,'GO!','#8ff7ff',1.25);
   updateHud();
 }
 function updateHud(){
@@ -723,7 +751,7 @@ function impact(){
   if(hull<=0){end();return true}return false;
 }
 function end(){
-  mode='over';pressed=false;morphSelecting=false;morphSelect.classList.remove('open');morphHint.classList.remove('show');boostBtn.style.display='none';morphBtn.style.display='none';abilityBtn.style.display='none';
+  mode='over';document.body.classList.remove('playing');pressed=false;morphSelecting=false;if(morphSelect)morphSelect.classList.remove('open');if(morphHint)morphHint.classList.remove('show');boostBtn.style.display='none';morphBtn.style.display='none';abilityBtn.style.display='none';
   shake=14;bank+=coins;persistHangar();renderShop();
   const s=Math.floor(distance);
   if(s>best){best=s;try{localStorage.setItem('jetpack-run-best',String(best))}catch(e){}}
@@ -733,9 +761,23 @@ function end(){
    'FLY AGAIN');
 }
 start.onclick=()=>{
-  ensureAudio();
-  if(mode==='pause'){mode='play';overlay.style.display='none';boostBtn.style.display='block';morphBtn.style.display='block';last=performance.now()}
-  else reset();
+  try{
+    ensureAudio();
+    if(mode==='pause'){
+      mode='play';
+      document.body.classList.add('playing');
+      overlay.style.display='none';
+      boostBtn.style.display='block';
+      morphBtn.style.display='block';
+      last=performance.now();
+    }else{
+      reset();
+    }
+  }catch(err){
+    console.error('START FLIGHT FAILED',err);
+    if(message)message.textContent='START ERROR: '+err.message;
+    if(overlay)overlay.style.display='grid';
+  }
 };
 function activateBoost(){
   if(mode!=='play'||cells<3||boostTime>0)return;
@@ -746,7 +788,7 @@ function activateMorph(chosenForm){
    if(mode!=='play'||morphCores<2||morphTime>0)return;
    const forms=Object.keys(MORPH_FORMS);
    const selected=forms.includes(chosenForm)?chosenForm:forms[0];
-   morphSelecting=false;morphSelect.classList.remove('open');morphHint.classList.remove('show');
+   morphSelecting=false;if(morphSelect)morphSelect.classList.remove('open');if(morphHint)morphHint.classList.remove('show');
    morphCores=0;
    morphForm=selected;
    morphTime=MORPH_FORMS[morphForm].duration+upgrades.morph*1.5+(morphStage(morphForm)-1)*1.4;invuln=Math.max(invuln,2.5);morphTransform=1.15;morphBurstRing=1;poseFlash=.8;poseKind='morph';morphSnap=1;camPose=.55;camPoseKind='morph';
@@ -792,11 +834,11 @@ function refreshMorphSelector(){
 function openMorphSelector(){
    if(mode!=='play'||morphCores<2||morphTime>0)return;
    morphSelecting=!morphSelecting;
-   morphSelect.classList.toggle('open',morphSelecting);
-   morphHint.classList.toggle('show',morphSelecting);
+   if(morphSelect)morphSelect.classList.toggle('open',morphSelecting);
+   if(morphHint)morphHint.classList.toggle('show',morphSelecting);
    if(morphSelecting){pressed=false;refreshMorphSelector();tone(520,.08,'triangle')}
 }
-for(const b of morphSelect.querySelectorAll('.morphChoice')){
+for(const b of (morphSelect?morphSelect.querySelectorAll('.morphChoice'):[])){
   b.addEventListener('pointerdown',e=>{
     e.preventDefault();e.stopPropagation();
     activateMorph(b.dataset.form);
@@ -811,7 +853,7 @@ addEventListener('pointerdown',down,{passive:false});
 addEventListener('pointerup',up,{passive:false});
 addEventListener('pointercancel',up,{passive:false});
 addEventListener('blur',()=>{pressed=false;if(mode==='play')pause()});
-function pause(){if(mode!=='play')return;morphSelecting=false;morphSelect.classList.remove('open');morphHint.classList.remove('show');mode='pause';boostBtn.style.display='none';morphBtn.style.display='none';show('PAUSED','Your flight is ready when you are.','RESUME')}
+function pause(){if(mode!=='play')return;document.body.classList.remove('playing');morphSelecting=false;if(morphSelect)morphSelect.classList.remove('open');if(morphHint)morphHint.classList.remove('show');mode='pause';boostBtn.style.display='none';morphBtn.style.display='none';show('PAUSED','Your flight is ready when you are.','RESUME')}
 addEventListener('keydown',e=>{
   if(['Space','ArrowUp','KeyP','KeyB','KeyM','KeyA','Digit1','Digit2','Digit3','Digit4'].includes(e.code))e.preventDefault();
   if(e.code==='KeyA')activateMorphAbility();
@@ -889,24 +931,24 @@ function drawPlayer(){
   const bankBase=Math.max(-.5,Math.min(.58,player.vy/640));
   const bank=bankBase*1.14+sway+(boostKick?Math.sin(clock*18)*.03:0);
   const speedStretch=Math.min(1,Math.abs(player.vy)/280);
+
+  // Declare pose/attack flags before any expression uses them.
+  const poseT=poseFlash>0?poseFlash:0;
+  const poseVictory=poseKind==='victory'&&poseT>0;
+  const poseMorph=poseKind==='morph'&&poseT>0;
+  const poseHurt=poseKind==='hurt'&&poseT>0;
+  const atk=attackPose>0?attackPose:0;
+  const atkPulse=atk>0?Math.sin((1-atk/.48)*Math.PI):0;
+
   const squashY=1+speedStretch*.055+(boostKick*.03)+(poseHurt?0.10:0);
   const squashX=1-speedStretch*.03-(boostKick*.02)-(poseHurt?0.08:0);
   const recoil=(thrust>.08?Math.sin(clock*18)*2.3*thrust:0)+(boostTime>0?Math.sin(clock*25)*1.3:0);
   const mood=hull===1?'hurt':((boostKick||atk>0)?'angry':(isMorph?'charged':'normal'));
   const blinkCycle=(clock*1.7)%5.4;
   const blinking=blinkCycle>5.12;
-  const poseT=poseFlash>0?poseFlash:0;
   const transformP=morphTransform>0?1-Math.min(1,morphTransform/1.15):1;
   const snapP=morphSnap>0?morphSnap:0;
   const anticipation=morphTransform>0?Math.sin(transformP*Math.PI):0;
-  const atk=attackPose>0?attackPose:0;
-  const atkPulse=atk>0?Math.sin((1-atk/.48)*Math.PI):0;
-
-
-  const poseVictory=poseKind==='victory'&&poseT>0;
-  const poseMorph=poseKind==='morph'&&poseT>0;
-  const poseHurt=poseKind==='hurt'&&poseT>0;
-
 
   const poseLift=poseVictory?(-8*Math.sin((1-poseT)*Math.PI)):poseMorph?(-5*Math.sin((1-poseT)*Math.PI)):0;
   const actionTilt=attackKind==='razer'?-0.10*atkPulse:attackKind==='heavy'?0.05*atkPulse:attackKind==='phoenix'?-.05*atkPulse:attackKind==='stealth'?-.08*atkPulse:attackKind==='boost'?-.12*atkPulse:0;
@@ -2408,6 +2450,7 @@ function updateBoss(dt,speed){
 }
 
 function tick(now){
+  try{
   let dt=Math.min(.033,Math.max(0,(now-last)/1000));last=now;clock+=dt;
   zoneFlash=Math.max(0,zoneFlash-dt);missionFlash=Math.max(0,missionFlash-dt);
   launchFX=Math.max(0,launchFX-dt);zoneTransition=Math.max(0,zoneTransition-dt);poseFlash=Math.max(0,poseFlash-dt);stageCompleteFlash=Math.max(0,stageCompleteFlash-dt);bossFlash=Math.max(0,bossFlash-dt);craftUpgradeFlash=Math.max(0,craftUpgradeFlash-dt*1.8);campaignFinale=Math.max(0,campaignFinale-dt);
@@ -2523,53 +2566,13 @@ function tick(now){
     for(const o of energyOrbs)o.x-=speed*dt;
   
   for(const e of enemyDefeats){
-    const q=Math.max(0,e.life/e.max);
-    x.save();x.translate(e.x,e.y);x.rotate(e.rot);x.globalAlpha=q;
-    const sc=e.scale*(.75+.25*q);
-    x.scale(sc,sc);
-
-    if(e.kind==='drone'){
-      // Drone breaks into two cartoon halves and spins out.
-      x.strokeStyle='#071321';x.lineWidth=4;
-      x.fillStyle=e.color;
-      x.save();x.translate(-8*q,-5);x.rotate(-1.4*(1-q));
-      x.beginPath();x.moveTo(-18,0);x.lineTo(-3,-11);x.lineTo(2,0);x.lineTo(-3,11);x.closePath();x.fill();x.stroke();
-      x.restore();
-      x.save();x.translate(8*q,5);x.rotate(1.4*(1-q));
-      x.beginPath();x.moveTo(18,0);x.lineTo(3,-11);x.lineTo(-2,0);x.lineTo(3,11);x.closePath();x.fill();x.stroke();
-      x.restore();
-      x.fillStyle='#fff';x.beginPath();x.arc(0,-2,4,0,Math.PI*2);x.fill();
-    }else if(e.kind==='missile'){
-      // Missile corkscrews away with a sputtering flame.
-      x.strokeStyle='#071321';x.lineWidth=4;x.fillStyle=e.color;
-      x.beginPath();x.moveTo(-22,-8);x.lineTo(8,-8);x.lineTo(20,0);x.lineTo(8,8);x.lineTo(-22,8);x.closePath();x.fill();x.stroke();
-      x.fillStyle='#ffe27a';
-      x.beginPath();x.moveTo(-22,-5);x.lineTo(-35-rand(0,8),0);x.lineTo(-22,5);x.closePath();x.fill();x.stroke();
-      x.strokeStyle='#fff';x.lineWidth=2;
-      x.beginPath();x.moveTo(-2,-14);x.lineTo(4,-20);x.moveTo(7,-13);x.lineTo(13,-18);x.stroke();
-    }else if(e.kind==='mine'){
-      // Mine inflates, squashes, then POPS.
-      const pop=1+(1-q)*.75;
-      x.scale(pop,1/pop);
-      x.fillStyle=e.color;x.strokeStyle='#071321';x.lineWidth=4;
-      x.beginPath();x.arc(0,0,15,0,Math.PI*2);x.fill();x.stroke();
-      for(let i=0;i<8;i++){
-        const a=i*Math.PI/4;
-        x.beginPath();x.moveTo(Math.cos(a)*13,Math.sin(a)*13);x.lineTo(Math.cos(a)*22,Math.sin(a)*22);x.stroke();
-      }
-      if(q<.45){
-        x.fillStyle='#fff';x.font='900 13px system-ui';x.textAlign='center';x.fillText('POP!',0,-25);
-      }
-    }else{
-      // Debris tumbles apart into a chunky cartoon rock.
-      x.fillStyle='#64748b';x.strokeStyle='#071321';x.lineWidth=4;
-      x.beginPath();x.moveTo(-15,-7);x.lineTo(-6,-16);x.lineTo(11,-13);x.lineTo(18,0);x.lineTo(8,14);x.lineTo(-10,12);x.closePath();x.fill();x.stroke();
-      x.strokeStyle='#cbd5e1';x.lineWidth=2;
-      x.beginPath();x.moveTo(-8,-5);x.lineTo(5,-10);x.moveTo(-3,6);x.lineTo(9,2);x.stroke();
-    }
-
-    x.restore();
+    e.life-=dt;
+    e.x+=e.vx*dt;
+    e.y+=e.vy*dt;
+    e.vy+=35*dt;
+    e.rot+=e.spin*dt;
   }
+  enemyDefeats=enemyDefeats.filter(e=>e.life>0);
 
   for(const f of fragments){f.x+=f.vx*dt;f.y+=f.vy*dt;f.vy+=180*dt;f.rot+=f.vr*dt;f.life-=dt;f.vx*=.992}
     for(const cp of comicPops){cp.y-=38*dt;cp.life-=dt}
@@ -2623,10 +2626,35 @@ function tick(now){
   for(const p of particles){p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt}
   particles=particles.filter(p=>p.life>0);
   for(const t of trail)t.life-=dt;trail=trail.filter(t=>t.life>0);if(trail.length>80)trail=trail.slice(-60);
-  shake=Math.max(0,shake-50*dt);draw();requestAnimationFrame(tick);
+  shake=Math.max(0,shake-50*dt);draw();
+  }catch(err){
+    console.error('FRAME ERROR',err);
+    mode='error';
+    if(message)message.textContent='FRAME ERROR: '+err.message;
+    if(overlay)overlay.style.display='grid';
+  }
+  requestAnimationFrame(tick);
 }
 requestAnimationFrame(tick);
 })();
+
+window.addEventListener('error',function(e){
+  console.error('JET GODS ERROR:',e.message,e.filename,e.lineno);
+  const ov=document.querySelector('#overlay');
+  const msg=document.querySelector('#message');
+  if(ov&&msg&&getComputedStyle(ov).display!=='none'){
+    msg.textContent='SYSTEM ERROR: '+e.message;
+  }
+});
+
+
+console.log('JET GODS BOOT OK');
+window.addEventListener('unhandledrejection',function(e){
+  console.error('JET GODS PROMISE ERROR:',e.reason);
+  if(message)message.textContent='SYSTEM ERROR: '+(e.reason&&e.reason.message?e.reason.message:String(e.reason));
+  if(overlay)overlay.style.display='grid';
+});
+
 </script>
 </body>
 </html>
