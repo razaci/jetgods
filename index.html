@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-<title>Jet Gods APEX TOON — Gameplay Overlay Fixed v7</title>
+<title>Jet Gods APEX TOON — Enhanced Gameplay v9</title>
 <style>
 :root{color-scheme:dark}
 html,body{margin:0;height:100%;overflow:hidden;background:#050c19;color:#edfaff;font:600 16px system-ui;touch-action:none}
@@ -243,6 +243,55 @@ body.playing #menuCard{
 }
 body.playing canvas{display:block}
 
+
+/* v8 — clean gameplay screen: hide the entire top information/HUD area during flight */
+body.playing #hud,
+body.playing .hud,
+body.playing #topHud,
+body.playing .topHud,
+body.playing #topbar,
+body.playing .topbar,
+body.playing #stats,
+body.playing .stats,
+body.playing #objective,
+body.playing #stageHud,
+body.playing #evoHud,
+body.playing #craftHud,
+body.playing #camHud,
+body.playing #progHud,
+body.playing #zone,
+body.playing #score,
+body.playing #coins,
+body.playing #best,
+body.playing #fuelWrap,
+body.playing #fuelBar,
+body.playing .fuelWrap,
+body.playing .fuel,
+body.playing .statusPanel,
+body.playing .infoPanel,
+body.playing .missionPanel,
+body.playing .flightInfo{
+  display:none !important;
+}
+
+/* Keep only the actual game canvas and touch/action controls visible in flight. */
+body.playing canvas{display:block !important}
+
+
+/* v9 — gameplay polish, no top HUD */
+body.playing #boost,
+body.playing #morphBtn,
+body.playing #abilityBtn{
+  backdrop-filter:blur(5px);
+  border:1px solid #ffffff22;
+}
+body.playing #boost.ready{animation:btnPulse 1s ease-in-out infinite alternate}
+body.playing #morphBtn.ready{animation:btnPulse 1s ease-in-out infinite alternate}
+body.playing #abilityBtn.ready{animation:btnPulse .8s ease-in-out infinite alternate}
+@keyframes btnPulse{
+  to{transform:scale(1.055);filter:brightness(1.14)}
+}
+
 </style>
 </head>
 <body>
@@ -292,7 +341,7 @@ body.playing canvas{display:block}
 <div id="overlay" role="dialog" aria-modal="true" aria-labelledby="title">
   <div id="card">
     <h1 id="title">JET GODS</h1>
-    <p id="message">Phase 10 ties the whole arcade loop together: persistent campaign wins, boss totals, stage-clear totals, stronger finale rewards, a real campaign-clear screen, and prestige hangar glow for repeated victories.</p>
+    <p id="message">Enhanced gameplay build: cleaner full-screen flight, richer moving scenery, stronger speed effects, visual defense fields, stage portals, and incoming-threat markers without bringing the large top HUD back.</p>
     <div id="hangarBay" aria-label="Animated Jet Gods hangar">
       <div class="hangarLamp l1"></div><div class="hangarLamp l2"></div><div class="hangarLamp l3"></div>
       <div class="robotArm left"></div><div class="robotArm right"></div>
@@ -647,12 +696,29 @@ addEventListener('resize',resize);resize();
 player={x:Math.max(72,Math.min(120,W*.22)),y:H*.5,vy:0,r:17};
 
 function show(t,m,b){
+  for(const sel of [
+    '#hud','.hud','#topHud','.topHud','#topbar','.topbar','#stats','.stats',
+    '#objective','#stageHud','#evoHud','#craftHud','#camHud','#progHud','#zone',
+    '#score','#coins','#best','#fuelWrap','.statusPanel','.infoPanel','.missionPanel','.flightInfo'
+  ]){
+    for(const el of document.querySelectorAll(sel))el.style.display='';
+  }
+
   for(const el of document.querySelectorAll('#overlay .brand,.bigTitle,.giantTitle,.splashTitle,.heroTitle')){
     el.style.display='';
   }
 
   document.body.classList.remove('playing');title.textContent=t;message.textContent=m;start.textContent=b;overlay.style.display='grid'}
 function reset(){
+  const gameplayInfoSelectors=[
+    '#hud','.hud','#topHud','.topHud','#topbar','.topbar','#stats','.stats',
+    '#objective','#stageHud','#evoHud','#craftHud','#camHud','#progHud','#zone',
+    '#score','#coins','#best','#fuelWrap','.statusPanel','.infoPanel','.missionPanel','.flightInfo'
+  ];
+  for(const sel of gameplayInfoSelectors){
+    for(const el of document.querySelectorAll(sel))el.style.display='none';
+  }
+
   document.body.classList.add('playing');
   for(const el of document.querySelectorAll('#overlay .brand,.bigTitle,.giantTitle,.splashTitle,.heroTitle')){
     el.style.display='none';
@@ -766,6 +832,9 @@ start.onclick=()=>{
     if(mode==='pause'){
       mode='play';
       document.body.classList.add('playing');
+      for(const sel of ['#hud','.hud','#topHud','.topHud','#topbar','.topbar','#stats','.stats','#objective','#stageHud','#evoHud','#craftHud','#camHud','#progHud','#zone','#score','#coins','#best','#fuelWrap','.statusPanel','.infoPanel','.missionPanel','.flightInfo']){
+        for(const el of document.querySelectorAll(sel))el.style.display='none';
+      }
       overlay.style.display='none';
       boostBtn.style.display='block';
       morphBtn.style.display='block';
@@ -925,7 +994,7 @@ function drawPlayer(){
   const evoStage=isMorph?morphStage(morphForm):1;
   const mColor=isMorph?MORPH_FORMS[morphForm].color:'#65eaff';
   const pulse=.5+.5*Math.sin(clock*8.5);
-  const boostKick=(boostTime>0?1:0)+(overdriveTime>0?.6:0);
+  const boostKick=(boostTime>0?1.12:0)+(overdriveTime>0?.72:0);
   const bob=(mode==='play'?Math.sin(clock*7.4)*2.1:0);
   const sway=(mode==='play'?Math.sin(clock*4.3)*.06:0);
   const bankBase=Math.max(-.5,Math.min(.58,player.vy/640));
@@ -1035,7 +1104,7 @@ function drawPlayer(){
 
   // Rear engine block.
   x.fillStyle='#24425d';rounded(-34,-18,24,36,8);x.fill();
-  x.strokeStyle='#071321';x.lineWidth=4;rounded(-34,-18,24,36,8);x.stroke();
+  x.strokeStyle='#071321';x.lineWidth=4.5;rounded(-34,-18,24,36,8);x.stroke();
   for(const ey of [-10,10]){
     x.fillStyle='#102338';rounded(-36,ey-6,11,12,4);x.fill();
     x.fillStyle=isMorph?mColor:'#82fbff';rounded(-34,ey-4,7,8,3);x.fill();
@@ -1587,6 +1656,117 @@ function drawWorldScenery(){
   x.restore();
 }
 
+
+function drawAmbientPolish(){
+  if(mode!=='play')return;
+  x.save();
+
+  // Zone-specific motes/embers. Purely decorative.
+  for(let i=0;i<18;i++){
+    const xx=((i*83-distance*(7+(i%4)*1.3))%(W+120)+W+120)%(W+120)-60;
+    const yy=((i*137+clock*(18+(i%3)*8))%(H+80))-40;
+    x.globalAlpha=.10+(i%4)*.025;
+    x.fillStyle=
+      zone===1?'#ffb066':
+      zone===3?(i%2?'#e879f9':'#67e8f9'):
+      zone===2?'#b8c8ff':'#8ff7ff';
+    const r=1.2+(i%3)*.7;
+    x.beginPath();x.arc(xx,yy,r,0,Math.PI*2);x.fill();
+  }
+
+  // Foreground speed wisps.
+  const fast=boostTime>0||overdriveTime>0;
+  x.globalAlpha=fast?.24:.08;
+  x.strokeStyle=zone===3?'#e9d5ff':'#dffcff';
+  x.lineCap='round';
+  for(let i=0;i<7;i++){
+    const yy=((i*91+clock*(fast?190:75))%(H+100))-50;
+    const xx=((i*167-distance*(fast?19:9))%(W+220)+W+220)%(W+220)-110;
+    const len=fast?75:28;
+    x.lineWidth=1+(i%3);
+    x.beginPath();x.moveTo(xx,yy);x.lineTo(xx-len,yy);x.stroke();
+  }
+  x.restore();
+}
+
+function drawStagePortal(){
+  if(mode!=='play'||boss)return;
+  const st=currentStage();
+  if(!st||st.length<=0)return;
+  const remain=st.length-stageDistance;
+  if(remain>45||remain<0)return;
+
+  const p=1-Math.max(0,remain)/45;
+  const px=W-34-p*18;
+  const py=H*.5;
+  x.save();
+  x.globalAlpha=.16+p*.36;
+  x.translate(px,py);
+  x.strokeStyle=zone===3?'#e879f9':'#8ff7ff';
+  x.lineWidth=3+p*3;
+  for(let i=0;i<3;i++){
+    x.save();x.rotate(clock*(.35+i*.12)*(i%2?-1:1));
+    x.beginPath();x.ellipse(0,0,20+i*13,62+i*16,0,0,Math.PI*2);x.stroke();
+    x.restore();
+  }
+  x.globalAlpha=.22+p*.35;
+  x.fillStyle='#ffffff';
+  x.beginPath();x.ellipse(0,0,9+p*5,48+p*10,0,0,Math.PI*2);x.fill();
+  x.restore();
+}
+
+function drawPlayerDefenseFX(){
+  if(!player||mode!=='play')return;
+  x.save();x.translate(player.x,player.y);
+
+  // Defensive rings instead of a textual HUD.
+  if(invuln>0||shieldTime>0||barrierTime>0||phaseTime>0){
+    const col=phaseTime>0?'#c4b5fd':barrierTime>0?'#60a5fa':shieldTime>0?'#72f6dc':'#ffffff';
+    x.globalAlpha=.20+.14*Math.sin(clock*8);
+    x.strokeStyle=col;x.lineWidth=2.5;
+    x.beginPath();x.ellipse(0,0,34+Math.sin(clock*5)*2,27+Math.sin(clock*5)*2,0,0,Math.PI*2);x.stroke();
+    if(barrierTime>0||phaseTime>0){
+      x.globalAlpha=.14;
+      x.beginPath();x.ellipse(0,0,43,34,0,0,Math.PI*2);x.stroke();
+    }
+  }
+
+  // Wing-tip energy sparks.
+  x.globalAlpha=.34+.16*Math.sin(clock*11);
+  x.fillStyle=boostTime>0?'#ffffff':morphTime>0&&morphForm?MORPH_FORMS[morphForm].color:'#8ff7ff';
+  for(const sy of [-1,1]){
+    x.beginPath();x.arc(-9,sy*27,2.5,0,Math.PI*2);x.fill();
+    if(boostTime>0){
+      x.strokeStyle='#dffcff';x.lineWidth=2;
+      x.beginPath();x.moveTo(-12,sy*27);x.lineTo(-44,sy*29);x.stroke();
+    }
+  }
+  x.restore();
+}
+
+function drawThreatEdgeFX(){
+  if(mode!=='play')return;
+  x.save();
+  x.globalAlpha=.62;
+  // Purely visual edge markers for incoming missiles/projectiles.
+  for(const m of missiles){
+    if(m.x>W-85){
+      const yy=Math.max(30,Math.min(H-30,m.y));
+      x.fillStyle='#ff6b81';x.strokeStyle='#071321';x.lineWidth=3;
+      x.beginPath();x.moveTo(W-10,yy);x.lineTo(W-26,yy-10);x.lineTo(W-26,yy+10);x.closePath();x.fill();x.stroke();
+    }
+  }
+  for(const p of bossProjectiles){
+    if(p.x>W-85){
+      const yy=Math.max(30,Math.min(H-30,p.y));
+      x.fillStyle='#ffe066';x.strokeStyle='#071321';x.lineWidth=3;
+      x.beginPath();x.moveTo(W-10,yy);x.lineTo(W-25,yy-9);x.lineTo(W-25,yy+9);x.closePath();x.fill();x.stroke();
+    }
+  }
+  x.restore();
+}
+
+
 function draw(){
   x.clearRect(0,0,W,H);
   x.save();
@@ -1648,6 +1828,8 @@ function draw(){
     x.strokeStyle='#91b5ff55';x.lineWidth=7;x.beginPath();x.ellipse(px,py,100,23,-.35,0,Math.PI*2);x.stroke();
   }
   drawWorldScenery();
+  drawAmbientPolish();
+  drawStagePortal();
 
   // Harmless foreground cartoon streaks for extra arcade movement.
   if(mode==='play'){
@@ -1847,7 +2029,7 @@ function draw(){
     const bobY=Math.sin(clock*6+coin.x*.018)*3;
     x.translate(coin.x,coin.y+bobY);
     x.rotate(Math.sin(clock*4+coin.x*.01)*.08);
-    x.globalAlpha=.18+.08*Math.sin(clock*6+coin.x*.01);
+    x.globalAlpha=.22+.10*Math.sin(clock*6+coin.x*.01);
     x.fillStyle=coin.kind==='coin'?'#ffe27a':coin.kind==='fuel'?'#67efff':'#d8a4ff';
     x.beginPath();x.arc(0,0,(coin.r||12)+11+Math.sin(clock*5)*2,0,Math.PI*2);x.fill();
     x.globalAlpha=1;
@@ -2345,6 +2527,8 @@ if(morphAbilityFlash>0&&morphForm){
     x.restore();
   }
 
+  drawThreatEdgeFX();
+  drawPlayerDefenseFX();
   if(player)drawPlayer();
   x.restore();
 }
