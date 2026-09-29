@@ -1,0 +1,631 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>Jet Gods — Flight Arcade (Enhanced)</title>
+<style>
+:root{color-scheme:dark}
+html,body{margin:0;height:100%;overflow:hidden;background:#050c19;color:#edfaff;font:600 16px system-ui;touch-action:none}
+canvas{display:block;width:100vw;height:100dvh}
+button{font:800 19px system-ui;border:0;border-radius:13px;background:#fbd454;color:#172135;padding:14px 35px;cursor:pointer;min-height:52px}
+#hud{position:fixed;top:calc(env(safe-area-inset-top) + 7px);left:10px;right:10px;max-width:720px;margin:auto;padding:9px 12px 10px;background:linear-gradient(135deg,#081426f2,#132a44e8 55%,#071323f2);border:1px solid #6de8ff80;border-radius:15px;box-shadow:0 10px 35px #0009,inset 0 1px #b8faff60;pointer-events:none;z-index:2;box-sizing:border-box}
+#hud:before,#hud:after{content:"";position:absolute;width:17px;height:17px;border-color:#ffe187;pointer-events:none}
+#hud:before{top:-2px;left:-2px;border-top:3px solid;border-left:3px solid;border-radius:15px 0 0 0}
+#hud:after{right:-2px;bottom:-2px;border-right:3px solid;border-bottom:3px solid;border-radius:0 0 15px 0}
+.hudtop{display:flex;align-items:center;gap:9px;height:25px}
+.brand{font-size:19px;font-weight:1000;letter-spacing:.1em;color:#fce28a;text-shadow:0 0 10px #efb54c80;white-space:nowrap}
+.brand i{font-style:normal;color:#7beaff}
+.brand:before{content:'◆';font-size:14px;color:#77f6e8;margin-right:7px}
+#zone{margin-left:auto;color:#8de7fa;font-size:11px;letter-spacing:.12em;white-space:nowrap}
+#sound,#pause{pointer-events:auto;margin:0;padding:0;width:34px;height:30px;min-height:30px;flex:none;background:#234360;color:#eaf9ff;border:1px solid #75dbe880;border-radius:8px;font-size:16px;line-height:1}
+.telemetry{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin-top:8px}
+.telemetry span{min-width:0;overflow:hidden;white-space:nowrap;text-align:center;background:#061421b8;border:1px solid #507c92aa;border-radius:7px;padding:5px 2px;font-variant-numeric:tabular-nums;color:#f7faff;font-size:clamp(10px,2.9vw,13px);letter-spacing:.02em}
+.telemetry span:nth-child(2){color:#ffe180}
+.gaugerow{display:flex;align-items:end;gap:10px;margin-top:8px}
+.fuelwrap{flex:1;min-width:0}
+.fuelwrap label{display:block;font-size:10px;letter-spacing:.15em;color:#a5ddec;margin-bottom:4px}
+#fuelbox{height:10px;border:1px solid #85e9e4;border-radius:8px;background:#14243b;overflow:hidden}
+#fuelbar{height:100%;width:100%;background:linear-gradient(90deg,#f5b847,#ffdf78 38%,#70eeeb);box-shadow:0 0 10px #5ff1e9;transition:width .08s linear}
+#hull{font-size:14px;white-space:nowrap;color:#ffa4b8;letter-spacing:.05em;padding-bottom:1px}
+#objective{min-height:15px;padding-top:4px;color:#ffe5a1;font-size:11px;letter-spacing:.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#badge{margin:10px auto 0;padding:10px;border:1px solid #f5dc8b80;border-radius:10px;background:#39321e;color:#ffe7a4;font-size:13px;font-weight:800;letter-spacing:.04em}
+#badge.locked{background:#152235;color:#8faabc;border-color:#4a6976}
+#missionCard{margin:12px auto 0;padding:10px;border:1px solid #e7bd6b80;border-radius:10px;background:#2c2a2c;color:#ffe5a1;font-size:13px;line-height:1.35}
+#power{min-height:14px;padding-top:5px;color:#bcf7e9;font-size:11px;letter-spacing:.05em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#morph{min-height:14px;padding-top:3px;color:#ffb8e8;font-size:11px;letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#boost{position:fixed;right:18px;bottom:calc(env(safe-area-inset-bottom) + 22px);width:88px;height:88px;border-radius:50%;padding:5px;font-size:14px;background:#35475d;color:#adc0ce;box-shadow:0 6px 25px #0009;display:none;z-index:3}
+#boost.ready{background:#fbd454;color:#182034;box-shadow:0 0 25px #fbd45488}
+#morphBtn{position:fixed;left:18px;bottom:calc(env(safe-area-inset-bottom) + 22px);width:72px;height:72px;border-radius:50%;padding:4px;font-size:12px;background:#3a2a55;color:#d4b8ff;box-shadow:0 6px 25px #0009;display:none;z-index:3;line-height:1.2}
+#morphBtn.ready{background:#c77dff;color:#1a0a2e;box-shadow:0 0 22px #c77dff88}
+#overlay{position:fixed;inset:0;display:grid;place-items:center;background:radial-gradient(circle at 50% 32%,#1d415699,#030a18e8 75%);text-align:center;padding:16px;z-index:4}
+#card{width:min(100%,410px);max-height:calc(100dvh - 35px);overflow:auto;box-sizing:border-box;background:linear-gradient(145deg,#142c47f5,#081527f8);border:1px solid #72e8f0b3;border-radius:20px;padding:24px;box-shadow:0 20px 60px #000b,inset 0 1px #aafcff70}
+h1{margin:0 0 8px;color:#ffe18a;text-shadow:0 0 16px #f8b55e70;font-size:clamp(28px,7.5vw,42px);letter-spacing:.07em}
+p{line-height:1.45;color:#d5eaf5}
+#shopToggle{display:block;margin:12px auto 0;padding:9px 20px;min-height:42px;background:#1e5671;color:#e2faff;font-size:16px}
+#shop{display:none;margin-top:12px;padding:13px;border:1px solid #6de8ff66;border-radius:13px;background:#081b2f;text-align:left}
+#shop.open{display:block}
+#bank{text-align:center;color:#ffdd75;margin:0 0 8px}
+#shop button{display:block;width:100%;margin:7px 0;padding:10px;text-align:left;font-size:14px;line-height:1.3;min-height:45px;background:#24506b;color:white}
+#shop button:disabled{opacity:.48;cursor:default}
+small{display:block;margin-top:14px;color:#9ec6d5;line-height:1.45}
+@media(max-width:360px){#hud{padding:8px}.brand{font-size:16px}#zone{font-size:10px}#hull{font-size:12px}.hudtop{gap:5px}#sound,#pause{width:29px;height:29px;min-height:29px;font-size:13px}}
+button:focus-visible{outline:3px solid #fff3a8;outline-offset:3px}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important}}
+</style>
+</head>
+<body>
+<canvas id="game" aria-label="Jet Gods flight game"></canvas>
+<div id="hud">
+  <div class="hudtop">
+    <div class="brand">JET <i>GODS</i></div>
+    <div id="zone">HANGAR</div>
+    <button id="sound" type="button" aria-label="Mute sound">♪</button>
+    <button id="pause" type="button" aria-label="Pause game">Ⅱ</button>
+  </div>
+  <div class="telemetry">
+    <span id="score">DISTANCE 0</span>
+    <span id="coins">COINS 0</span>
+    <span id="best">BEST 0</span>
+  </div>
+  <div class="gaugerow">
+    <div class="fuelwrap">
+      <label>THRUST FUEL</label>
+      <div id="fuelbox"><div id="fuelbar"></div></div>
+    </div>
+    <div id="hull">HULL ●●●</div>
+  </div>
+  <div id="power"></div>
+  <div id="morph"></div>
+  <div id="objective">MISSION</div>
+</div>
+<button id="boost" type="button" aria-label="Activate boost">BOOST<br>0/3</button>
+<button id="morphBtn" type="button" aria-label="Activate morph">MORPH<br>0/2</button>
+<div id="overlay" role="dialog" aria-modal="true" aria-labelledby="title">
+  <div id="card">
+    <h1 id="title">JET GODS</h1>
+    <p id="message">Pilot a morph-capable neon jet through wider, cleaner flight lanes. Morph cores appear often, hazards are spaced farther apart, and every morph gives you a strong survival advantage.</p>
+    <button id="start" type="button">START FLIGHT</button>
+    <div id="missionCard"></div>
+    <div id="badge" class="locked">◇ FLIGHT ACE · REACH 500 DISTANCE</div>
+    <button id="shopToggle" type="button">HANGAR UPGRADES</button>
+    <div id="shop">
+      <div id="bank"></div>
+      <button data-upgrade="fuel" type="button"></button>
+      <button data-upgrade="shield" type="button"></button>
+      <button data-upgrade="value" type="button"></button>
+      <button data-upgrade="morph" type="button"></button>
+    </div>
+    <small>
+      Hold to rise • release to refill fuel<br>
+      Collect 3 blue cells → BOOST · 2 morph cores → MORPH<br>
+      Power-ups: M magnet · S shield · ◷ slow · P phase · 2× coins · N nova · D drone · C storm · + repair · ✦ core · ⚡ overdrive · 🛡 barrier · ✧ prism<br>
+      Morph forms: STEALTH · HEAVY · RAZER · PHOENIX<br>
+      Keyboard: Space/↑ thrust · B boost · M morph · P pause
+    </small>
+  </div>
+</div>
+<script>
+
+(() => {
+'use strict';
+const c = document.querySelector('#game');
+const x = c.getContext('2d');
+const overlay = document.querySelector('#overlay');
+const title = document.querySelector('#title');
+const message = document.querySelector('#message');
+const start = document.querySelector('#start');
+const scoreEl = document.querySelector('#score');
+const coinsEl = document.querySelector('#coins');
+const bestEl = document.querySelector('#best');
+const fuelBar = document.querySelector('#fuelbar');
+const boostBtn = document.querySelector('#boost');
+const morphBtn = document.querySelector('#morphBtn');
+const powerEl = document.querySelector('#power');
+const morphEl = document.querySelector('#morph');
+const objectiveEl = document.querySelector('#objective');
+const missionCard = document.querySelector('#missionCard');
+const badgeEl = document.querySelector('#badge');
+const soundBtn = document.querySelector('#sound');
+const pauseBtn = document.querySelector('#pause');
+const zoneEl = document.querySelector('#zone');
+const hullEl = document.querySelector('#hull');
+const shop = document.querySelector('#shop');
+const shopToggle = document.querySelector('#shopToggle');
+const bankEl = document.querySelector('#bank');
+
+let W=0,H=0,dpr=1,mode='menu',pressed=false;
+let player,obstacles=[],pickups=[],particles=[],missiles=[],lasers=[],vents=[],debris=[];
+let mines=[],dronesEnemy=[],energyOrbs=[];
+let zone=0,zoneFlash=0,hull=3,distance=0,coins=0,best=0;
+let spawn=0,clock=0,last=0,shake=0,fuel=100,cells=0,boostTime=0,thrust=0;
+let missileTimer=11,warning=null,gateCount=0;
+let magnetTime=0,shieldTime=0,slowTime=0,invuln=0;
+let bank=0,upgrades={fuel:0,shield:0,value:0,morph:0};
+let missionIndex=0,missionProgress=0,missionFlash=0,missionText='';
+let phaseTime=0,doubleTime=0,pulseTime=0,droneTime=0,droneCooldown=0;
+let beam=null,stormTime=0,cargoFlash=0,combo=0,comboTime=0,ace=false;
+let soundOn=true,audioCtx=null,lastTone=0;
+let morphCores=0,morphTime=0,morphForm=null,overdriveTime=0,barrierTime=0,prismTime=0;
+let trail=[],stars=[];
+
+const MORPH_FORMS={
+  stealth:{name:'STEALTH',color:'#a78bfa',duration:11,desc:'Ghost phase + speed'},
+  heavy:{name:'HEAVY',color:'#fb923c',duration:10,desc:'Impact armor + stability'},
+  razer:{name:'RAZER',color:'#f472b6',duration:9,desc:'Hazard-clearing beam form'},
+  phoenix:{name:'PHOENIX',color:'#fbbf24',duration:12,desc:'Repair + protective fire aura'}
+};
+
+const missions=[
+  {kind:'coins',goal:12,reward:20,label:'Collect 12 coins'},
+  {kind:'distance',goal:120,reward:30,label:'Reach the engine room'},
+  {kind:'cells',goal:3,reward:25,label:'Collect 3 fuel cells'},
+  {kind:'distance',goal:260,reward:45,label:'Reach open space'},
+  {kind:'boost',goal:1,reward:25,label:'Use one charged boost'},
+  {kind:'morph',goal:1,reward:40,label:'Activate a morph'},
+  {kind:'distance',goal:400,reward:70,label:'Fly 400 distance'},
+  {kind:'cores',goal:4,reward:50,label:'Collect 4 morph cores'}
+];
+
+try{best=+(localStorage.getItem('jetpack-run-best')||0)||0}catch(e){}
+bestEl.textContent='BEST '+best;
+
+try{
+  const saved=JSON.parse(localStorage.getItem('jetpack-run-hangar')||'{}');
+  bank=Math.max(0,Math.floor(Number(saved.bank)||0));
+  for(const key of ['fuel','shield','value','morph'])
+    upgrades[key]=Math.min(5,Math.max(0,Math.floor(Number(saved[key])||0)));
+  missionIndex=Math.min(missions.length,Math.max(0,Math.floor(Number(saved.missionIndex)||0)));
+  missionProgress=Math.max(0,Math.floor(Number(saved.missionProgress)||0));
+  ace=saved.ace===true;
+  soundOn=saved.soundOn!==false;
+}catch(e){}
+
+function persistHangar(){
+  try{localStorage.setItem('jetpack-run-hangar',JSON.stringify({bank,...upgrades,missionIndex,missionProgress,ace,soundOn}))}catch(e){}
+}
+function renderBadge(){
+  badgeEl.textContent=ace?'★ FLIGHT ACE · 500 DISTANCE CLEARED':'◇ FLIGHT ACE · REACH 500 DISTANCE';
+  badgeEl.classList.toggle('locked',!ace);
+}
+function ensureAudio(){
+  if(!soundOn||audioCtx)return;
+  try{const C=globalThis.AudioContext||globalThis.webkitAudioContext;if(C)audioCtx=new C()}catch(e){}
+}
+function tone(freq,duration=.1,type='sine'){
+  if(!soundOn)return;ensureAudio();if(!audioCtx)return;
+  const now=performance.now();if(now-lastTone<40)return;lastTone=now;
+  try{
+    audioCtx.resume();
+    const t=audioCtx.currentTime,o=audioCtx.createOscillator(),g=audioCtx.createGain();
+    o.type=type;o.frequency.setValueAtTime(freq,t);
+    g.gain.setValueAtTime(.045,t);g.gain.exponentialRampToValueAtTime(.001,t+duration);
+    o.connect(g);g.connect(audioCtx.destination);o.start(t);o.stop(t+duration+.01);
+  }catch(e){}
+}
+function renderMission(){
+  const m=missions[missionIndex];
+  const t=m?'MISSION '+(missionIndex+1)+' · '+m.label+' · '+Math.min(m.goal,missionProgress)+'/'+m.goal+' · +'+m.reward+' coins':'MISSIONS COMPLETE · All rewards earned';
+  objectiveEl.textContent=t;missionCard.textContent=t;
+}
+function missionEvent(kind,value){
+  const m=missions[missionIndex];if(!m||m.kind!==kind)return;
+  const old=missionProgress;
+  missionProgress=kind==='distance'?Math.max(missionProgress,Math.floor(value)):missionProgress+value;
+  if(missionProgress>=m.goal){
+    bank+=m.reward;missionText='MISSION COMPLETE · +'+m.reward+' COINS';missionFlash=2.5;
+    missionIndex++;missionProgress=0;tone(880,.18);persistHangar();renderShop();
+  }else if(kind!=='distance'||Math.floor(old/10)!==Math.floor(missionProgress/10))persistHangar();
+  renderMission();
+}
+function coinStorm(){
+  stormTime=2.5;
+  for(let i=0;i<22;i++)pickups.push({x:W+25+i*20,y:Math.max(48,Math.min(H-48,player.y+Math.sin(i*.7)*60)),r:10,kind:'coin'});
+  burst(player.x,player.y,'#ffe079',40);
+}
+function droneFire(){
+  if(droneTime<=0||droneCooldown>0)return;
+  let found=null,group=null;
+  for(const arr of [missiles,lasers,debris,vents,obstacles,mines,dronesEnemy])
+    for(const h of arr){let hx=h.x;if(hx>player.x+15&&hx<player.x+280&&(!found||hx<found.x)){found=h;group=arr}}
+  if(!found){droneCooldown=.16;return}
+  let by=found.y??(found.top?found.top-10:H*.5);
+  group.splice(group.indexOf(found),1);beam={x:found.x,y:by,time:.22};droneCooldown=.5;
+  burst(found.x,by,'#8cfaff',18);tone(980,.07,'triangle');
+}
+function cost(key){
+  const base={fuel:20,shield:30,value:40,morph:50}[key];
+  const step={fuel:15,shield:20,value:25,morph:30}[key];
+  return base+step*upgrades[key];
+}
+function renderShop(){
+  bankEl.textContent='HANGAR BALANCE: '+bank+' COINS';
+  for(const key of ['fuel','shield','value','morph']){
+    const b=shop.querySelector('[data-upgrade='+key+']'),lvl=upgrades[key];
+    const name={fuel:'Fuel capacity',shield:'Shield duration',value:'Coin value',morph:'Morph duration'}[key];
+    const effect={fuel:100+lvl*20+' fuel',shield:7+lvl*2+' seconds',value:1+lvl+' per coin',morph:'+'+(lvl*1.5).toFixed(1)+'s morph'}[key];
+    b.textContent=name+' · Level '+lvl+'/5 · '+effect+(lvl<5?' · '+cost(key)+' coins':' · MAX');
+    b.disabled=lvl>=5||bank<cost(key);
+  }
+}
+shop.addEventListener('click',e=>{
+  const key=e.target.dataset.upgrade;
+  if(!key||!(key in upgrades)||upgrades[key]>=5||bank<cost(key))return;
+  bank-=cost(key);upgrades[key]++;persistHangar();renderShop();
+});
+pauseBtn.onclick=()=>{if(mode==='play')pause();else if(mode==='pause')start.click()};
+shopToggle.onclick=()=>{shop.classList.toggle('open');shopToggle.textContent=shop.classList.contains('open')?'CLOSE HANGAR':'HANGAR UPGRADES';renderShop()};
+soundBtn.textContent=soundOn?'♪':'×';
+soundBtn.setAttribute('aria-label',soundOn?'Mute sound':'Enable sound');
+soundBtn.onclick=()=>{
+  soundOn=!soundOn;soundBtn.textContent=soundOn?'♪':'×';
+  soundBtn.setAttribute('aria-label',soundOn?'Mute sound':'Enable sound');
+  if(soundOn){ensureAudio();tone(660,.1)}persistHangar();
+};
+renderShop();renderMission();renderBadge();
+
+function resize(){
+  dpr=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;
+  c.width=Math.round(W*dpr);c.height=Math.round(H*dpr);x.setTransform(dpr,0,0,dpr,0,0);
+  if(stars.length<40){stars=[];for(let i=0;i<55;i++)stars.push({x:Math.random()*W,y:Math.random()*H,s:Math.random()*2.2+.4,sp:Math.random()*1.5+.3})}
+}
+addEventListener('resize',resize);resize();
+player={x:Math.max(72,Math.min(120,W*.22)),y:H*.5,vy:0,r:17};
+
+function show(t,m,b){title.textContent=t;message.textContent=m;start.textContent=b;overlay.style.display='grid'}
+function reset(){
+  player={x:Math.max(72,Math.min(120,W*.22)),y:H*.5,vy:0,r:17};
+  obstacles=[];pickups=[];particles=[];missiles=[];lasers=[];vents=[];debris=[];
+  mines=[];dronesEnemy=[];energyOrbs=[];
+  zone=0;zoneFlash=0;hull=3;warning=null;missileTimer=7;gateCount=0;
+  magnetTime=shieldTime=slowTime=phaseTime=doubleTime=pulseTime=droneTime=droneCooldown=stormTime=cargoFlash=combo=comboTime=0;
+  morphCores=0;morphTime=0;morphForm=null;overdriveTime=0;barrierTime=0;prismTime=0;
+  beam=null;invuln=2;distance=coins=spawn=clock=shake=cells=boostTime=thrust=0;
+  fuel=100+upgrades.fuel*20;trail=[];
+  shop.classList.remove('open');shopToggle.textContent='HANGAR UPGRADES';
+  pressed=false;boostBtn.style.display='block';morphBtn.style.display='block';
+  mode='play';overlay.style.display='none';updateHud();
+}
+function updateHud(){
+  scoreEl.textContent='DISTANCE '+Math.floor(distance);
+  coinsEl.textContent='COINS '+coins;bestEl.textContent='BEST '+best;
+  fuelBar.style.width=Math.ceil(fuel/(100+upgrades.fuel*20)*100)+'%';
+  boostBtn.innerHTML='BOOST<br>'+cells+'/3';
+  boostBtn.classList.toggle('ready',cells>=3&&boostTime<=0);
+  boostBtn.style.opacity=mode==='play'?'1':'.55';
+  morphBtn.innerHTML='MORPH<br>'+morphCores+'/2';
+  morphBtn.classList.toggle('ready',morphCores>=2&&morphTime<=0);
+  morphBtn.style.opacity=mode==='play'?'1':'.55';
+  renderMission();zoneEl.textContent=['HANGAR','ENGINE ROOM','OPEN SPACE'][zone];
+  hullEl.textContent='HULL '+'●'.repeat(hull)+'○'.repeat(3-hull);
+  const powers=[
+    magnetTime>0?'MAGNET '+Math.ceil(magnetTime)+'s':'',
+    shieldTime>0?'SHIELD '+Math.ceil(shieldTime)+'s':'',
+    slowTime>0?'SLOW '+Math.ceil(slowTime)+'s':'',
+    phaseTime>0?'PHASE '+Math.ceil(phaseTime)+'s':'',
+    doubleTime>0?'2× COINS '+Math.ceil(doubleTime)+'s':'',
+    droneTime>0?'DRONE '+Math.ceil(droneTime)+'s':'',
+    overdriveTime>0?'OVERDRIVE '+Math.ceil(overdriveTime)+'s':'',
+    barrierTime>0?'BARRIER '+Math.ceil(barrierTime)+'s':'',
+    prismTime>0?'PRISM '+Math.ceil(prismTime)+'s':'',
+    combo>=3?'COMBO ×'+combo:''
+  ].filter(Boolean);
+  powerEl.textContent=powers.join('  •  ');
+  if(morphTime>0&&morphForm)morphEl.textContent='MORPH: '+MORPH_FORMS[morphForm].name+' '+Math.ceil(morphTime)+'s · '+MORPH_FORMS[morphForm].desc;
+  else morphEl.textContent=morphCores>=2?'MORPH READY':'';
+}
+function impact(){
+  if(mode!=='play'||invuln>0)return false;
+  if(morphForm==='heavy'&&morphTime>0){invuln=1.2;burst(player.x,player.y,'#fb923c',28);tone(220,.15,'sawtooth');return false}
+  if(barrierTime>0){barrierTime=0;invuln=1.4;burst(player.x,player.y,'#60a5fa',26);return false}
+  if(shieldTime>0){shieldTime=0;invuln=1.5;burst(player.x,player.y,'#83fcff',22);return false}
+  combo=0;comboTime=0;hull--;tone(180,.19,'sawtooth');invuln=2;shake=9;
+  burst(player.x,player.y,'#ff647b',24);updateHud();
+  if(hull<=0){end();return true}return false;
+}
+function end(){
+  mode='over';pressed=false;boostBtn.style.display='none';morphBtn.style.display='none';
+  shake=14;bank+=coins;persistHangar();renderShop();
+  const s=Math.floor(distance);
+  if(s>best){best=s;try{localStorage.setItem('jetpack-run-best',String(best))}catch(e){}}
+  updateHud();show('FLIGHT ENDED',`Distance ${s} • ${coins} coins. Give it another run!`,'FLY AGAIN');
+}
+start.onclick=()=>{
+  ensureAudio();
+  if(mode==='pause'){mode='play';overlay.style.display='none';boostBtn.style.display='block';morphBtn.style.display='block';last=performance.now()}
+  else reset();
+};
+function activateBoost(){
+  if(mode!=='play'||cells<3||boostTime>0)return;
+  cells=0;boostTime=3;tone(490,.22,'triangle');missionEvent('boost',1);
+  burst(player.x,player.y,'#74eaff',28);updateHud();
+}
+function activateMorph(){
+  if(mode!=='play'||morphCores<2||morphTime>0)return;
+  morphCores=0;
+  const forms=Object.keys(MORPH_FORMS);
+  morphForm=forms[Math.floor(Math.random()*forms.length)];
+  morphTime=MORPH_FORMS[morphForm].duration+upgrades.morph*1.5;invuln=Math.max(invuln,2.5);
+  tone(620,.25,'triangle');missionEvent('morph',1);
+  burst(player.x,player.y,MORPH_FORMS[morphForm].color,45);
+   // Morph shockwave clears nearby clutter so transforming never traps the player.
+   debris=debris.filter(h=>h.x>player.x+310);mines=mines.filter(h=>h.x>player.x+310);dronesEnemy=dronesEnemy.filter(h=>h.x>player.x+310);missiles=missiles.filter(h=>h.x>player.x+310);
+  if(morphForm==='phoenix'){hull=3;barrierTime=Math.max(barrierTime,4);burst(player.x,player.y,'#fbbf24',30)}
+  if(morphForm==='razer'){
+    pulseTime=.55;obstacles=[];lasers=[];vents=[];debris=[];missiles=[];mines=[];dronesEnemy=[];warning=null;
+    tone(280,.3,'sawtooth');
+  }
+  if(morphForm==='stealth')phaseTime=Math.max(phaseTime,4);
+  updateHud();
+}
+boostBtn.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();activateBoost()});
+morphBtn.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();activateMorph()});
+function down(e){if(e.target.closest&&e.target.closest('button,#shop'))return;e.preventDefault();if(mode==='play')pressed=true}
+function up(e){if(e.cancelable)e.preventDefault();pressed=false}
+addEventListener('pointerdown',down,{passive:false});
+addEventListener('pointerup',up,{passive:false});
+addEventListener('pointercancel',up,{passive:false});
+addEventListener('blur',()=>{pressed=false;if(mode==='play')pause()});
+function pause(){if(mode!=='play')return;mode='pause';boostBtn.style.display='none';morphBtn.style.display='none';show('PAUSED','Your flight is ready when you are.','RESUME')}
+addEventListener('keydown',e=>{
+  if(['Space','ArrowUp','KeyP','KeyB','KeyM'].includes(e.code))e.preventDefault();
+  if(e.code==='KeyB')activateBoost();
+  else if(e.code==='KeyM')activateMorph();
+  else if(e.code==='KeyP'){if(mode==='play')pause();else if(mode==='pause')start.click()}
+  else if(e.code==='Space'||e.code==='ArrowUp'){if(mode==='play')pressed=true;else if(mode==='menu'||mode==='over')start.click()}
+});
+addEventListener('keyup',e=>{if(e.code==='Space'||e.code==='ArrowUp')pressed=false});
+function rand(a,b){return a+Math.random()*(b-a)}
+function burst(px,py,color,n=12){
+  for(let i=0;i<n;i++)particles.push({x:px,y:py,vx:rand(-210,210),vy:rand(-210,210),life:rand(.2,.7),max:.7,color,size:rand(2,4.5)});
+}
+function rounded(px,py,w,h,r){x.beginPath();x.roundRect(px,py,w,h,r)}
+
+function drawPlayer(){
+  x.save();x.translate(player.x,player.y);
+  x.rotate(Math.max(-.32,Math.min(.42,player.vy/850)));
+  const isMorph=morphTime>0&&morphForm;
+  const mColor=isMorph?MORPH_FORMS[morphForm].color:null;
+  if(mode==='play'&&thrust>.1)trail.push({x:player.x-22,y:player.y+10+rand(-4,4),life:.35,max:.35,color:isMorph?mColor:(boostTime>0?'#72ecff':'#ffac43')});
+  if(thrust>.08&&mode==='play'){
+    const flameLen=18+thrust*22+(boostTime>0?12:0)+(overdriveTime>0?10:0);
+    x.fillStyle=isMorph?mColor:'#ffae38';
+    x.beginPath();x.moveTo(-19,8);x.lineTo(-19-flameLen-rand(0,8),12);x.lineTo(-18,18);x.fill();
+    x.fillStyle='#fff29c';x.beginPath();x.moveTo(-19,10);x.lineTo(-19-flameLen*.55,12);x.lineTo(-19,15);x.fill();
+  }
+  x.fillStyle=isMorph?mColor+'cc':'#426082';
+  x.beginPath();x.moveTo(-12,-8);x.lineTo(-28,-24);x.lineTo(-18,2);x.fill();
+  x.beginPath();x.moveTo(-13,10);x.lineTo(-30,24);x.lineTo(-16,17);x.fill();
+  if(phaseTime>0||(isMorph&&morphForm==='stealth')){
+    x.globalAlpha=.55+.25*Math.sin(clock*12);x.strokeStyle=isMorph?mColor:'#c6a4ff';x.lineWidth=3;
+    x.beginPath();x.arc(0,0,38,0,Math.PI*2);x.stroke();x.globalAlpha=1;
+  }
+  x.fillStyle=isMorph?mColor+'99':'#536c91';rounded(-21,-15,13,29,4);x.fill();
+  if(shieldTime>0||invuln>0||barrierTime>0){
+    x.strokeStyle=barrierTime>0?'#60a5fa':'#8effe8';x.lineWidth=barrierTime>0?5:4;
+    x.beginPath();x.arc(0,0,32,0,Math.PI*2);x.stroke();
+  }
+  if(boostTime>0){x.strokeStyle='#77f3ff';x.lineWidth=4;x.beginPath();x.arc(0,0,29,0,Math.PI*2);x.stroke()}
+  if(isMorph){
+    x.strokeStyle=mColor;x.lineWidth=3;x.globalAlpha=.7+.3*Math.sin(clock*8);
+    x.beginPath();x.arc(0,0,35+Math.sin(clock*6)*3,0,Math.PI*2);x.stroke();x.globalAlpha=1;
+  }
+  let body=x.createLinearGradient(-11,-17,18,18);
+  if(isMorph){body.addColorStop(0,mColor);body.addColorStop(.5,'#fff8');body.addColorStop(1,mColor)}
+  else{body.addColorStop(0,'#ffe29a');body.addColorStop(.55,'#f6c065');body.addColorStop(1,'#c47c48')}
+  x.fillStyle=body;rounded(-11,-17,27,34,11);x.fill();
+  x.fillStyle='#233e62';rounded(0,-13,23,17,8);x.fill();
+  x.fillStyle=isMorph?mColor:'#86eaff';rounded(5,-9,17,9,5);x.fill();
+  x.fillStyle='#fff0b8';x.fillRect(-3,3,13,3);
+  x.fillStyle='#283d61';rounded(-9,13,10,10,3);x.fill();rounded(5,13,10,10,3);x.fill();
+  if(isMorph&&morphForm==='heavy'){x.fillStyle='#9a3412aa';rounded(-16,-12,8,24,3);x.fill();rounded(8,-12,8,24,3);x.fill()}
+  if(isMorph&&morphForm==='phoenix'){
+    x.fillStyle='#f97316';x.globalAlpha=.6+.3*Math.sin(clock*10);
+    x.beginPath();x.moveTo(-8,-20);x.lineTo(-35,-35);x.lineTo(-5,-8);x.fill();
+    x.beginPath();x.moveTo(-8,20);x.lineTo(-35,35);x.lineTo(-5,8);x.fill();x.globalAlpha=1;
+  }
+  if(isMorph&&morphForm==='razer'){x.strokeStyle='#f472b6';x.lineWidth=2;x.beginPath();x.moveTo(18,-8);x.lineTo(32,0);x.lineTo(18,8);x.stroke()}
+  x.globalAlpha=1;
+  if(combo>=3){x.font='bold 13px system-ui';x.textAlign='center';x.fillStyle='#ffe286';x.fillText('COMBO ×'+combo,0,-42)}
+  if(isMorph){x.font='bold 11px system-ui';x.textAlign='center';x.fillStyle=mColor;x.fillText(MORPH_FORMS[morphForm].name,0,-52)}
+  x.restore();
+}
+
+function draw(){
+  x.clearRect(0,0,W,H);
+  let sh=shake?rand(-shake,shake):0;x.save();x.translate(sh,0);
+  const g=x.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,['#0d2544','#342326','#070c24'][zone]);
+  g.addColorStop(1,['#071225','#141a29','#0d1840'][zone]);
+  x.fillStyle=g;x.fillRect(-20,0,W+40,H);
+  if(zone===2||distance>200){
+    for(const s of stars){
+      let sx=((s.x-distance*s.sp*.4)%(W+20)+W+20)%(W+20);
+      x.fillStyle=s.s>1.8?'#c4e0ff':'#7a93b8';x.globalAlpha=.5+s.s*.2;x.fillRect(sx,s.y,s.s,s.s);
+    }
+    x.globalAlpha=1;
+  }
+  let offset=(distance*9)%72;
+  if(zone===2){x.fillStyle='#28345b';x.fillRect(0,0,W,10);x.fillRect(0,H-10,W,10)}
+  else{
+    for(let px=-72-offset;px<W+72;px+=72){x.strokeStyle=zone===0?'#183b5a':'#4d302e';x.lineWidth=2;x.beginPath();x.moveTo(px,0);x.lineTo(px+W*.12,H);x.stroke()}
+    for(let py=52;py<H;py+=70){x.strokeStyle=zone===0?'#153550':'#563730';x.beginPath();x.moveTo(0,py);x.lineTo(W,py);x.stroke()}
+    x.fillStyle=zone===0?'#112e49':'#49312f';x.fillRect(0,0,W,14);x.fillRect(0,H-15,W,15);
+    x.fillStyle=zone===0?'#3cc8dc':'#ff9e55';x.fillRect(0,14,W,3);x.fillRect(0,H-18,W,3);
+  }
+  for(let i=0;i<3;i++){
+    let dx=((i*197-distance*(i+1)*.7)%(W+160)+W+160)%(W+160)-80;
+    let dy=H*(.23+i*.24)+Math.sin(clock*(.8+i*.2)+i)*13;
+    x.globalAlpha=.22;x.fillStyle=zone===2?'#88a9ff':zone===1?'#ffaf72':'#58ddea';
+    x.beginPath();x.moveTo(dx-21,dy);x.lineTo(dx,dy-7);x.lineTo(dx+25,dy);x.lineTo(dx,dy+8);x.closePath();x.fill();
+    x.fillRect(dx-4,dy-3,9,6);x.globalAlpha=1;
+  }
+  if(zone===1){
+    for(let i=0;i<3;i++){let y=H*(.17+i*.31);x.strokeStyle='#ff9c6040';x.lineWidth=3;x.beginPath();x.moveTo(0,y);for(let px=0;px<W+30;px+=25)x.lineTo(px,y+Math.sin(clock*3+px*.02+i)*5);x.stroke()}
+    for(let i=0;i<2;i++){let tx=W*(.3+i*.47),ty=H*(.27+i*.39),r=25+i*8;x.strokeStyle='#e77d4955';x.lineWidth=6;x.beginPath();x.arc(tx,ty,r,0,Math.PI*2);x.stroke();for(let b=0;b<4;b++){let a=clock*(i?-.8:1)+b*Math.PI/2;x.fillStyle='#ffb15c77';x.fillRect(tx+Math.cos(a)*r-4,ty+Math.sin(a)*r-4,8,8)}}
+  }else if(zone===0){
+    let scan=((clock*75+distance*2)%(W+160))-80;x.fillStyle='#70f4ee18';x.beginPath();x.moveTo(scan,-5);x.lineTo(scan-95,H);x.lineTo(scan+35,H);x.fill();
+  }else{
+    let px=W*.78-(distance*.11)%W,py=H*.3;x.fillStyle='#4466a244';x.beginPath();x.arc(px,py,72,0,Math.PI*2);x.fill();
+    x.strokeStyle='#91b5ff55';x.lineWidth=7;x.beginPath();x.ellipse(px,py,100,23,-.35,0,Math.PI*2);x.stroke();
+  }
+  if(stormTime>0)for(let i=0;i<14;i++){x.fillStyle='#ffe28b55';x.fillRect(((i*107-clock*180)%(W+20)+W+20)%(W+20),((i*67+clock*30)%H),2,14)}
+  if(zoneFlash>0){x.globalAlpha=Math.min(1,zoneFlash/1.5);x.textAlign='center';x.font='bold 28px system-ui';x.fillStyle='#e9faff';x.fillText(['HANGAR','ENGINE ROOM','OPEN SPACE'][zone],W/2,H*.34);x.globalAlpha=1;x.textAlign='start'}
+  for(const o of obstacles){
+    const top=o.top+(o.motion?Math.sin(clock*2.2+o.phase)*o.motion:0),bottom=o.bottom+(o.motion?Math.sin(clock*2.2+o.phase)*o.motion:0);
+    x.fillStyle='#62e8e01c';x.fillRect(o.x,top+3,o.w,bottom-top-6);
+    x.fillStyle='#344d69';rounded(o.x,17,o.w,top-17,4);x.fill();rounded(o.x,bottom,o.w,H-18-bottom,4);x.fill();
+    x.fillStyle='#ff526a';x.fillRect(o.x-4,top-7,o.w+8,7);x.fillRect(o.x-4,bottom,o.w+8,7);
+    x.fillStyle='#ff9ba8';for(let py=30;py<top-10;py+=24)x.fillRect(o.x+o.w/2-3,py,6,8);for(let py=bottom+14;py<H-24;py+=24)x.fillRect(o.x+o.w/2-3,py,6,8);
+  }
+  for(const v of vents){
+    let active=Math.sin(clock*2.4+v.phase)>-.15;x.fillStyle=active?'#ff9556':'#885b45';x.fillRect(v.x,H-27,54,11);
+    if(active){let heat=x.createLinearGradient(0,H-v.height,0,H);heat.addColorStop(0,'#ffb55700');heat.addColorStop(1,'#ff572dcc');x.fillStyle=heat;x.fillRect(v.x+5,H-v.height,44,v.height-26);x.fillStyle='#ffd380';x.fillRect(v.x+15,H-48,24,25)}
+  }
+  for(const a of debris){x.fillStyle='#7b829b';x.beginPath();x.arc(a.x,a.y,a.r,0,Math.PI*2);x.fill();x.fillStyle='#4e5973';x.beginPath();x.arc(a.x-a.r*.28,a.y-a.r*.17,a.r*.22,0,Math.PI*2);x.arc(a.x+a.r*.35,a.y+a.r*.25,a.r*.14,0,Math.PI*2);x.fill()}
+  for(const m of mines){x.fillStyle='#ef4444';x.beginPath();x.arc(m.x,m.y,m.r,0,Math.PI*2);x.fill();x.strokeStyle='#fca5a5';x.lineWidth=2;x.beginPath();x.arc(m.x,m.y,m.r+4+Math.sin(clock*8)*2,0,Math.PI*2);x.stroke();x.fillStyle='#fef08a';x.beginPath();x.arc(m.x,m.y,3,0,Math.PI*2);x.fill()}
+  for(const d of dronesEnemy){x.fillStyle='#7c3aed';x.beginPath();x.moveTo(d.x-14,d.y);x.lineTo(d.x,d.y-10);x.lineTo(d.x+14,d.y);x.lineTo(d.x,d.y+10);x.fill();x.fillStyle='#c4b5fd';x.fillRect(d.x-4,d.y-3,8,6)}
+  if(slowTime>0){x.fillStyle='#6cd6ff16';x.fillRect(0,18,W,H-36)}
+  if(warning){x.fillStyle='#ff496e55';x.fillRect(W-48,warning.y-32,48,64);x.fillStyle='#ff9bab';x.font='bold 18px system-ui';x.fillText('!',W-24,warning.y+6)}
+  for(const l of lasers){let ly=l.y+Math.sin(clock*3+l.phase)*l.range;x.shadowBlur=18;x.shadowColor='#ff5175';x.fillStyle='#ff5776';x.fillRect(l.x,ly-5,72,10);x.fillStyle='#ffd5e0';x.fillRect(l.x,ly-2,72,4);x.shadowBlur=0;x.fillStyle='#526d89';x.fillRect(l.x-5,ly-12,7,24);x.fillRect(l.x+70,ly-12,7,24)}
+  for(const m of missiles){x.save();x.translate(m.x,m.y);x.fillStyle='#ff5c75';x.beginPath();x.moveTo(-24,-9);x.lineTo(7,-9);x.lineTo(20,0);x.lineTo(7,9);x.lineTo(-24,9);x.closePath();x.fill();x.fillStyle='#ffd16a';x.beginPath();x.moveTo(-24,-5);x.lineTo(-36-rand(0,10),0);x.lineTo(-24,5);x.fill();x.restore()}
+  for(const o of energyOrbs){x.save();x.translate(o.x,o.y);x.fillStyle='#a5f3fc';x.globalAlpha=.7+.3*Math.sin(clock*6+o.x);x.beginPath();x.arc(0,0,14,0,Math.PI*2);x.fill();x.strokeStyle='#ecfeff';x.lineWidth=2;x.beginPath();x.arc(0,0,18+Math.sin(clock*5)*2,0,Math.PI*2);x.stroke();x.fillStyle='#0e7490';x.font='bold 14px system-ui';x.textAlign='center';x.textBaseline='middle';x.fillText('✦',0,1);x.globalAlpha=1;x.restore()}
+  for(const coin of pickups){
+    x.save();x.translate(coin.x,coin.y);
+    const powerKinds=['magnet','shield','slow','repair','phase','double','nova','drone','storm','overdrive','barrier','prism','core'];
+    if(powerKinds.includes(coin.kind)){
+      const col={magnet:'#ff72ba',shield:'#8fffe3',repair:'#ff8ba7',phase:'#c7a2ff',double:'#ffe079',nova:'#83f9ff',drone:'#89f7c1',storm:'#ffd56f',overdrive:'#f97316',barrier:'#60a5fa',prism:'#e879f9',core:'#c084fc'}[coin.kind];
+      x.fillStyle=col;x.beginPath();x.arc(0,0,17,0,Math.PI*2);x.fill();
+      x.strokeStyle='#ffffffaa';x.lineWidth=2;x.beginPath();x.arc(0,0,21+Math.sin(clock*5)*2,0,Math.PI*2);x.stroke();
+      x.fillStyle='#0a2136';x.font='bold 14px system-ui';x.textAlign='center';x.textBaseline='middle';
+      const glyph={magnet:'M',shield:'S',repair:'+',phase:'P',double:'2×',nova:'N',drone:'D',storm:'C',overdrive:'⚡',barrier:'🛡',prism:'✧',core:'✦'}[coin.kind];
+      x.fillText(glyph,0,1);x.restore();continue;
+    }
+    x.rotate(clock*2);x.fillStyle=coin.kind==='fuel'?'#64e6ff':'#ffd552';
+    x.beginPath();x.ellipse(0,0,Math.max(3,coin.r*Math.abs(Math.cos(clock*3))),coin.r,0,0,Math.PI*2);x.fill();
+    x.strokeStyle=coin.kind==='fuel'?'#d6ffff':'#fff2a6';x.lineWidth=2;x.stroke();x.restore();
+  }
+  for(const p of particles){x.globalAlpha=Math.max(0,p.life/p.max);x.fillStyle=p.color;x.beginPath();x.arc(p.x,p.y,p.size||3,0,Math.PI*2);x.fill()}
+  x.globalAlpha=1;
+  for(const t of trail){x.globalAlpha=Math.max(0,t.life/t.max)*.7;x.fillStyle=t.color;x.beginPath();x.arc(t.x,t.y,3,0,Math.PI*2);x.fill()}
+  x.globalAlpha=1;
+  if(droneTime>0&&player){
+    let dx=player.x+47,dy=player.y-43+Math.sin(clock*7)*6;
+    x.shadowBlur=14;x.shadowColor='#8efce2';x.fillStyle='#153b55';
+    x.beginPath();x.moveTo(dx-17,dy);x.lineTo(dx,dy-9);x.lineTo(dx+17,dy);x.lineTo(dx,dy+9);x.fill();
+    x.fillStyle='#88ffe3';x.fillRect(dx-5,dy-3,10,6);x.shadowBlur=0;
+    if(beam){x.strokeStyle='#a7ffff';x.lineWidth=3;x.beginPath();x.moveTo(dx,dy);x.lineTo(beam.x,beam.y);x.stroke()}
+  }
+  if(cargoFlash>0){x.globalAlpha=Math.min(1,cargoFlash);x.fillStyle='#ffe49f';x.font='bold 16px system-ui';x.textAlign='center';x.fillText('SUPPLY CONVOY',W/2,H*.25);x.globalAlpha=1;x.textAlign='start'}
+  if(pulseTime>0){x.strokeStyle='#a7faff';x.globalAlpha=pulseTime/.7;x.lineWidth=8;x.beginPath();x.arc(player.x,player.y,(1-pulseTime/.7)*Math.max(W,H)*1.3,0,Math.PI*2);x.stroke();x.globalAlpha=1}
+  if(missionFlash>0){x.save();x.globalAlpha=Math.min(1,missionFlash);x.fillStyle='#ffe59c';x.font='bold 18px system-ui';x.textAlign='center';x.fillText(missionText,W/2,H*.43);x.restore()}
+  if(player)drawPlayer();
+  x.restore();
+}
+
+function tick(now){
+  let dt=Math.min(.033,Math.max(0,(now-last)/1000));last=now;clock+=dt;
+  zoneFlash=Math.max(0,zoneFlash-dt);missionFlash=Math.max(0,missionFlash-dt);
+  if(mode==='play'){
+    boostTime=Math.max(0,boostTime-dt);magnetTime=Math.max(0,magnetTime-dt);shieldTime=Math.max(0,shieldTime-dt);
+    slowTime=Math.max(0,slowTime-dt);invuln=Math.max(0,invuln-dt);phaseTime=Math.max(0,phaseTime-dt);
+    doubleTime=Math.max(0,doubleTime-dt);pulseTime=Math.max(0,pulseTime-dt);droneTime=Math.max(0,droneTime-dt);
+    droneCooldown=Math.max(0,droneCooldown-dt);stormTime=Math.max(0,stormTime-dt);cargoFlash=Math.max(0,cargoFlash-dt);
+    morphTime=Math.max(0,morphTime-dt);if(morphTime<=0)morphForm=null;
+    overdriveTime=Math.max(0,overdriveTime-dt);barrierTime=Math.max(0,barrierTime-dt);prismTime=Math.max(0,prismTime-dt);
+    if(beam){beam.time-=dt;if(beam.time<=0)beam=null}
+    comboTime=Math.max(0,comboTime-dt);if(comboTime===0)combo=0;
+    let speedMul=1;
+    if(boostTime>0)speedMul*=1.65;if(slowTime>0)speedMul*=.55;if(overdriveTime>0)speedMul*=1.35;
+    if(morphForm==='stealth'&&morphTime>0)speedMul*=1.25;if(morphForm==='heavy'&&morphTime>0)speedMul*=.88;
+    let speed=Math.min(380,180+distance*.34)*speedMul;
+    let gap=Math.min(H-72,Math.max(250,Math.min(H*.72,365)-distance*.018));
+    let firing=pressed&&fuel>0;
+    if(firing)fuel=Math.max(0,fuel-35*dt);else fuel=Math.min(100+upgrades.fuel*20,fuel+22*dt);
+    thrust+=(Number(firing)-thrust)*Math.min(1,dt*11);
+    player.vy+=(920-1930*thrust)*dt;player.vy*=Math.max(.92,1-.55*dt);
+    player.vy=Math.max(-420,Math.min(490,player.vy));player.y+=player.vy*dt;
+    distance+=speed*dt/16;missionEvent('distance',distance);
+    if(!ace&&distance>=500){ace=true;bank+=100;missionText='FLIGHT ACE · +100 COINS';missionFlash=3;burst(player.x,player.y,'#ffe18a',55);tone(980,.35,'triangle');persistHangar();renderShop();renderBadge()}
+    let nextZone=distance<120?0:distance<260?1:2;
+    if(nextZone!==zone){zone=nextZone;zoneFlash=2.5;hull=Math.min(3,hull+1);burst(player.x,player.y,'#aeecff',18)}
+    spawn-=dt;missileTimer-=dt;
+    if(missileTimer<=0&&distance>105&&zone!==1&&!warning){warning={y:Math.max(52,Math.min(H-52,player.y)),time:2.0};missileTimer=rand(12,17)}
+    if(warning){warning.time-=dt;if(warning.time<=0){missiles.push({x:W+35,y:warning.y});warning=null}}
+    if(spawn<=0){
+      const low=36+gap/2,high=H-36-gap/2,center=Math.max(low,Math.min(high,player.y+rand(-95,95)));
+      let o={x:W+35,w:Math.max(45,Math.min(65,W*.13)),top:center-gap/2,bottom:center+gap/2};
+      gateCount++;
+      if(zone===0){if(gateCount%4===0&&H>430){o.motion=Math.min(14,(H-gap-65)/2);o.phase=gateCount}obstacles.push(o);if(gateCount%10===0&&H>400)lasers.push({x:o.x+o.w+170,y:H*.5,range:Math.min(90,H*.15),phase:gateCount})}
+      else if(zone===1){vents.push({x:o.x,height:Math.min(280,H*.43),phase:gateCount});if(gateCount%6===0)lasers.push({x:o.x+170,y:H*.45,range:Math.min(85,H*.13),phase:gateCount});if(gateCount%9===0)mines.push({x:o.x+90,y:center+rand(-60,60),r:12})}
+      else{debris.push({x:o.x,y:center+rand(-80,80),r:rand(15,21)});if(gateCount%6===0)debris.push({x:o.x+120,y:center+rand(-115,115),r:rand(15,21)});if(gateCount%8===0)dronesEnemy.push({x:o.x+60,y:center+rand(-70,70),vy:rand(-40,40)});if(gateCount%12===0)mines.push({x:o.x+150,y:center,r:14})}
+      for(let k=0;k<3;k++)pickups.push({x:o.x+o.w+55+k*31,y:center+(k%2?18:-18),r:10,kind:'coin'});
+      pickups.push({x:o.x+o.w+175,y:center,r:12,kind:'fuel'});
+      if(gateCount%2===0)pickups.push({x:o.x+o.w+225,y:center,r:17,kind:['magnet','shield','slow','phase','double','nova'][Math.floor(gateCount/2-1)%6]});
+      if(gateCount%4===0)pickups.push({x:o.x+o.w+265,y:center-30,r:17,kind:'repair'});
+      if(gateCount%5===0)pickups.push({x:o.x+o.w+300,y:center+35,r:17,kind:'drone'});
+      if(gateCount%7===0)pickups.push({x:o.x+o.w+335,y:center-35,r:17,kind:'storm'});
+      if(gateCount%6===0)pickups.push({x:o.x+o.w+280,y:center+40,r:17,kind:'overdrive'});
+      if(gateCount%8===0)pickups.push({x:o.x+o.w+310,y:center-45,r:17,kind:'barrier'});
+      if(gateCount%9===0)pickups.push({x:o.x+o.w+350,y:center,r:17,kind:'prism'});
+      if(gateCount%2===0)pickups.push({x:o.x+o.w+200,y:center+rand(-42,42),r:18,kind:'core'});
+      if(gateCount%4===0)energyOrbs.push({x:o.x+o.w+140,y:center+rand(-80,80),r:12});
+      if(gateCount%6===0){cargoFlash=1.6;for(let j=0;j<7;j++)pickups.push({x:o.x+o.w+115+j*26,y:center+Math.sin(j*.9)*48,r:10,kind:'coin'})}
+      spawn=Math.max(2.05,2.85-distance*.00030);
+    }
+    for(const o of obstacles)o.x-=speed*dt;
+    for(const coin of pickups){coin.x-=speed*dt;if(magnetTime>0&&(coin.kind==='coin'||coin.kind==='core')){let dx=player.x-coin.x,dy=player.y-coin.y,d=Math.hypot(dx,dy);if(d<165&&d>1){coin.x+=dx/d*540*dt;coin.y+=dy/d*540*dt}}}
+    for(const m of missiles)m.x-=(speed+125)*dt;for(const l of lasers)l.x-=speed*dt;for(const v of vents)v.x-=speed*dt;
+    for(const a of debris)a.x-=speed*dt;for(const m of mines)m.x-=speed*dt;
+    for(const d of dronesEnemy){d.x-=speed*dt;d.y+=d.vy*dt;if(d.y<40||d.y>H-40)d.vy*=-1}
+    for(const o of energyOrbs)o.x-=speed*dt;
+    vents=vents.filter(v=>v.x>-65);debris=debris.filter(a=>a.x>-40);lasers=lasers.filter(l=>l.x>-80);
+    missiles=missiles.filter(m=>m.x>-50);obstacles=obstacles.filter(o=>o.x+o.w>-10);
+    pickups=pickups.filter(p=>p.x>-20&&!p.got);mines=mines.filter(m=>m.x>-30);
+    dronesEnemy=dronesEnemy.filter(d=>d.x>-40);energyOrbs=energyOrbs.filter(o=>o.x>-30&&!o.got);
+    for(const o of obstacles){let shift=o.motion?Math.sin(clock*2.2+o.phase)*o.motion:0;if(boostTime<=0&&phaseTime<=0&&!(morphForm==='stealth'&&morphTime>0)&&player.x+10>o.x&&player.x-10<o.x+o.w&&(player.y-11<o.top+shift||player.y+11>o.bottom+shift)){impact();break}}
+    if(mode==='play'&&boostTime<=0&&phaseTime<=0&&!(morphForm==='stealth'&&morphTime>0))for(const l of lasers){let ly=l.y+Math.sin(clock*3+l.phase)*l.range;if(player.x+13>l.x&&player.x-13<l.x+72&&Math.abs(player.y-ly)<18){impact();break}}
+    if(mode==='play'&&boostTime<=0&&phaseTime<=0&&!(morphForm==='stealth'&&morphTime>0))for(const v of vents){if(Math.sin(clock*2.4+v.phase)>-.15&&player.x+13>v.x+5&&player.x-13<v.x+49&&player.y+14>H-v.height){impact();break}}
+    if(mode==='play'&&boostTime<=0&&phaseTime<=0&&!(morphForm==='stealth'&&morphTime>0))for(const a of debris){if(Math.hypot(player.x-a.x,player.y-a.y)<a.r+10){impact();break}}
+    if(mode==='play'&&boostTime<=0&&phaseTime<=0&&!(morphForm==='stealth'&&morphTime>0))for(const m of missiles){if(Math.abs(m.x-player.x)<28&&Math.abs(m.y-player.y)<23){impact();break}}
+    if(mode==='play'&&boostTime<=0&&phaseTime<=0&&!(morphForm==='stealth'&&morphTime>0))for(const m of mines){if(Math.hypot(player.x-m.x,player.y-m.y)<m.r+10){impact();burst(m.x,m.y,'#ef4444',30);m.x=-999;break}}
+    if(mode==='play'&&boostTime<=0&&phaseTime<=0&&!(morphForm==='stealth'&&morphTime>0))for(const d of dronesEnemy){if(Math.hypot(player.x-d.x,player.y-d.y)<22){impact();break}}
+    if(mode==='play'&&(player.y-player.r<18||player.y+player.r>H-18)){player.y=Math.max(36,Math.min(H-36,player.y));player.vy=-player.vy*.25;if(phaseTime<=0&&!(morphForm==='stealth'&&morphTime>0))impact()}
+    if(mode==='play')for(const coin of pickups){
+      let dx=coin.x-player.x,dy=coin.y-player.y;
+      if(dx*dx+dy*dy<650){
+        coin.got=true;
+        if(coin.kind==='core'){morphCores=Math.min(2,morphCores+1);missionEvent('cores',1);tone(740,.14,'triangle');burst(coin.x,coin.y,'#c084fc',20)}
+        else if(coin.kind==='overdrive'){overdriveTime=6;tone(880,.18);burst(coin.x,coin.y,'#f97316',18)}
+        else if(coin.kind==='barrier'){barrierTime=8;tone(500,.16);burst(coin.x,coin.y,'#60a5fa',18)}
+        else if(coin.kind==='prism'){prismTime=7;doubleTime=Math.max(doubleTime,5);tone(920,.2);burst(coin.x,coin.y,'#e879f9',22)}
+        else if(coin.kind==='drone'){droneTime=10;droneCooldown=0;tone(700,.16);burst(coin.x,coin.y,'#89f7c1',18)}
+        else if(coin.kind==='storm'){coinStorm();tone(890,.2);burst(coin.x,coin.y,'#ffd56f',18)}
+        else if(coin.kind==='phase'){phaseTime=6;tone(520,.2,'triangle');burst(coin.x,coin.y,'#c7a2ff',18)}
+        else if(coin.kind==='double'){doubleTime=8;tone(760,.18);burst(coin.x,coin.y,'#ffe079',18)}
+        else if(coin.kind==='nova'){pulseTime=.7;obstacles=[];lasers=[];vents=[];debris=[];missiles=[];mines=[];dronesEnemy=[];warning=null;tone(240,.35,'sawtooth');burst(player.x,player.y,'#83f9ff',70)}
+        else if(coin.kind==='repair'){hull=Math.min(3,hull+1);burst(coin.x,coin.y,'#ff8ba7',12)}
+        else if(coin.kind==='magnet'){magnetTime=7;burst(coin.x,coin.y,'#ff72ba',12)}
+        else if(coin.kind==='shield'){shieldTime=7+upgrades.shield*2;burst(coin.x,coin.y,'#8fffe3',12)}
+        else if(coin.kind==='slow'){slowTime=5;burst(coin.x,coin.y,'#b9a6ff',12)}
+        else if(coin.kind==='fuel'){cells=Math.min(3,cells+1);missionEvent('cells',1);tone(620,.09);fuel=Math.min(100+upgrades.fuel*20,fuel+25);burst(coin.x,coin.y,'#64e6ff',9)}
+        else{let mult=(1+upgrades.value)*(doubleTime>0||prismTime>0?2:1);if(morphForm==='phoenix'&&morphTime>0)mult*=1.5;let earned=Math.round(mult);coins+=earned;missionEvent('coins',earned);combo++;comboTime=3;tone(780,.055);burst(coin.x,coin.y,'#ffd552',6)}
+      }
+    }
+    if(mode==='play')for(const o of energyOrbs){if(Math.hypot(player.x-o.x,player.y-o.y)<28){o.got=true;coins+=3+upgrades.value;fuel=Math.min(100+upgrades.fuel*20,fuel+12);tone(840,.1);burst(o.x,o.y,'#a5f3fc',14)}}
+    if(morphForm==='phoenix'&&morphTime>0&&Math.random()<.15){for(const arr of [debris,mines,dronesEnemy]){for(let i=arr.length-1;i>=0;i--){const h=arr[i];if(Math.hypot(player.x-h.x,player.y-(h.y||H/2))<70){burst(h.x,h.y||H/2,'#f97316',10);arr.splice(i,1)}}}}
+    droneFire();
+    if(mode==='play'&&Math.random()<.11){for(const l of lasers)if(l.x>-20&&l.x<W+20)burst(l.x+rand(0,72),l.y+Math.sin(clock*3+l.phase)*l.range,'#ff7496',1);for(const v of vents)if(v.x>-20&&v.x<W+20&&Math.sin(clock*2.4+v.phase)>-.15)burst(v.x+rand(0,54),H-v.height+rand(0,65),'#ffb35e',1)}
+    if(thrust>.3&&Math.random()<.65)burst(player.x-20,player.y+12,morphTime>0&&morphForm?MORPH_FORMS[morphForm].color:(boostTime>0?'#72ecff':'#ffac43'),boostTime>0||overdriveTime>0?2:1);
+    updateHud();
+  }
+  for(const p of particles){p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt}
+  particles=particles.filter(p=>p.life>0);
+  for(const t of trail)t.life-=dt;trail=trail.filter(t=>t.life>0);if(trail.length>80)trail=trail.slice(-60);
+  shake=Math.max(0,shake-50*dt);draw();requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>
